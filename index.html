@@ -7,16 +7,16 @@
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: sans-serif; }
-    body { margin: 0; background: #f0f2f5; display: flex; justify-content: center; height: 100vh; }
+    body { margin: 0; background: #f0f2f5; display: flex; justify-content: center; height: 100dvh; }
     .chat-container { width: 100%; max-width: 500px; background: #fff; display: flex; flex-direction: column; height: 100%; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
     .header { background: #075e54; color: #fff; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; }
     .header button { background: #25d366; color: #fff; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; }
     .status { font-size: 12px; color: #d9fdd3; }
     .messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #efeae2; }
-    .msg { max-width: 80%; padding: 8px 12px; border-radius: 8px; font-size: 15px; word-wrap: break-word; position: relative; }
+    .msg { max-width: 80%; padding: 8px 12px; border-radius: 8px; font-size: 15px; word-wrap: break-word; }
     .me { align-self: flex-end; background: #d9fdd3; }
     .other { align-self: flex-start; background: #fff; }
-    .timer { font-size: 10px; color: #666; margin-top: 4px; text-align: right; }
+    .meta { font-size: 10px; color: #666; margin-top: 4px; text-align: right; }
     .input-area { display: flex; padding: 10px; background: #f0f2f5; gap: 8px; }
     .input-area input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; outline: none; font-size: 15px; }
     .input-area button { background: #075e54; color: #fff; border: none; padding: 0 18px; border-radius: 20px; cursor: pointer; font-weight: bold; }
@@ -42,7 +42,6 @@
   </div>
 
   <script>
-    // URL-ൽ റൂം ഐഡി ഇല്ലെങ്കിൽ പുതിയൊരെണ്ണം ഉണ്ടാക്കുന്നു
     let roomId = window.location.hash.substring(1);
     if (!roomId) {
       roomId = Math.random().toString(36).substring(2, 10);
@@ -68,14 +67,14 @@
 
       if (data.type === 'msg') {
         addMessageToUI(data.id, data.text, data.sender === myId);
-        // മറ്റേ ആൾ അയച്ച മെസ്സേജ് കണ്ടാൽ 'seen' എന്ന് തിരിച്ച് അയക്കുന്നു
         if (data.sender !== myId) {
           client.publish(topic, JSON.stringify({ type: 'seen', id: data.id, sender: myId }));
         }
       }
 
       if (data.type === 'seen') {
-        startDeleteTimer(data.id);
+        const metaEl = document.getElementById('m_' + data.id);
+        if (metaEl) metaEl.innerText = 'Seen ✓✓';
       }
     });
 
@@ -92,29 +91,15 @@
       const div = document.createElement('div');
       div.className = 'msg ' + (isMe ? 'me' : 'other');
       div.id = id;
-      div.innerHTML = `<div>${escapeHtml(text)}</div><div class="timer" id="t_${id}">${isMe ? 'Sent' : 'Seen'}</div>`;
+      const statusHtml = isMe ? `<div class="meta" id="m_${id}">Sent ✓</div>` : '';
+      div.innerHTML = `<div>${escapeHtml(text)}</div>${statusHtml}`;
       const box = document.getElementById('messages');
       box.appendChild(div);
       box.scrollTop = box.scrollHeight;
     }
 
-    function startDeleteTimer(id) {
-      const el = document.getElementById(id);
-      const timerEl = document.getElementById('t_' + id);
-      if (!el || el.dataset.timing) return;
-      el.dataset.timing = 'true';
-      let sec = 120; // 2 മിനിറ്റ് (120 സെക്കൻഡ്)
-      const interval = setInterval(() => {
-        sec--;
-        if (timerEl) timerEl.innerText = `Deletes in ${sec}s`;
-        if (sec <= 0) {
-          clearInterval(interval);
-          if (el) el.remove();
-        }
-      }, 1000);
-    }
-
     function eraseAll() {
+      document.getElementById('messages').innerHTML = '';
       client.publish(topic, JSON.stringify({ type: 'erase', sender: myId }));
     }
 
