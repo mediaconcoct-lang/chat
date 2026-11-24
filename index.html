@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quick Anonymous Chat</title>
+    <!-- Load Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased selection:bg-indigo-100 selection:text-indigo-700 overflow-hidden">
+
+    <!-- Main Centered Container -->
+    <div class="w-full h-[100dvh] sm:h-[92dvh] sm:my-[4dvh] max-w-lg mx-auto bg-white sm:rounded-3xl sm:shadow-xl sm:border border-slate-200/80 flex flex-col overflow-hidden relative">
+
+        <!-- Header -->
+        <header class="px-4 py-3.5 bg-white border-b border-slate-100 flex items-center justify-between shrink-0 z-10">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                    <!-- Chat Icon SVG -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                </div>
+                <div class="min-w-0">
+                    <h1 class="text-base font-semibold text-slate-900 leading-tight truncate">Anonymous Chat</h1>
+                    <div class="flex items-center gap-1.5 mt-0.5">
+                        <span id="statusDot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                        <span id="statusText" class="text-xs text-slate-500 font-medium">Connecting...</span>
+                        <span class="text-slate-300 text-xs">•</span>
+                        <span id="roomBadge" class="text-xs font-mono text-slate-400 truncate">#------</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Copy Link Button -->
+            <button id="copyLinkBtn" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 active:scale-95 rounded-xl transition-all shrink-0 cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
+                <span>Copy Link</span>
+            </button>
+        </header>
+
+        <!-- Auto-Delete Info Banner -->
+        <div class="px-4 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-center gap-1.5 text-[11px] text-slate-500 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>Messages auto-delete <strong>2 minutes</strong> after being seen</span>
+        </div>
+
+        <!-- Messages Area -->
+        <main id="messagesContainer" class="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-white scroll-smooth">
+            <!-- Empty State -->
+            <div id="emptyState" class="h-full flex flex-col items-center justify-center text-center px-6 py-10">
+                <div class="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                </div>
+                <p class="text-sm font-medium text-slate-700">No messages yet</p>
+                <p class="text-xs text-slate-400 mt-1 max-w-xs leading-relaxed">
+                    Tap <strong>Copy Link</strong> above and share it with the other person to start chatting anonymously.
+                </p>
+            </div>
+        </main>
+
+        <!-- Bottom Controls: Message Input + Erase Button -->
+        <footer class="p-3 sm:p-4 bg-slate-50/80 border-t border-slate-100 space-y-2.5 shrink-0">
+            <!-- Message Form -->
+            <form id="messageForm" class="flex items-center gap-2">
+                <input
+                    id="messageInput"
+                    type="text"
+                    autocomplete="off"
+                    placeholder="Type a message..."
+                    maxlength="1000"
+                    class="flex-1 bg-white text-sm text-slate-800 placeholder-slate-400 px-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+                />
+                <button
+                    id="sendBtn"
+                    type="submit"
+                    disabled
+                    class="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white text-sm font-semibold rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-1.5 shrink-0 cursor-pointer disabled:cursor-not-allowed"
+                >
+                    <span>Send</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </form>
+
+            <!-- Prominent Erase Button at the Bottom -->
+            <button
+                id="eraseBtn"
+                type="button"
+                disabled
+                class="w-full py-2.5 px-4 bg-rose-50 hover:bg-rose-100 active:bg-rose-200 disabled:opacity-50 text-rose-600 border border-rose-200/80 rounded-2xl text-sm font-semibold transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+                <span>Erase All Messages</span>
+            </button>
+        </footer>
+
+        <!-- Floating Toast Notification -->
+        <div id="toast" class="pointer-events-none fixed bottom-28 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white text-xs font-medium px-4 py-2.5 rounded-full shadow-lg opacity-0 transition-opacity duration-200 z-50 whitespace-nowrap">
+            Notification
+        </div>
+
+    </div>
+
+    <!-- Firebase SDK & Application Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import {
+            getFirestore,
+            collection,
+            addDoc,
+            doc,
+            updateDoc,
+            deleteDoc,
+            onSnapshot
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ==========================================
+        // 1. CONFIGURATION & CONSTANTS
+        // ==========================================
+        const AUTO_DELETE_MS = 2 * 60 * 1000; // 2 minutes (120,000 ms) after seen
+        const COLLECTION_NAME = "anonymous_chat_messages";
+
+        // DOM Elements
+        const statusDot = document.getElementById("statusDot");
+        const statusText = document.getElementById("statusText");
+        const roomBadge = document.getElementById("roomBadge");
+        const copyLinkBtn = document.getElementById("copyLinkBtn");
+        const messagesContainer = document.getElementById("messagesContainer");
+        const emptyState = document.getElementById("emptyState");
+        const messageForm = document.getElementById("messageForm");
+        const messageInput = document.getElementById("messageInput");
+        const sendBtn = document.getElementById("sendBtn");
+        const eraseBtn = document.getElementById("eraseBtn");
+        const toastEl = document.getElementById("toast");
+
+        // Application State
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        let appId = typeof __app_id !== "undefined" ? __app_id : "default-app-id";
+        let roomMessages = []; // Current room's active messages in memory
+        const deletingIds = new Set(); // Track messages currently being deleted to avoid duplicate calls
+        const markingSeenIds = new Set(); // Track messages currently being marked as seen
+        let toastTimeout = null;
+
+        // ==========================================
+        // 2. ANONYMOUS SESSION ID & ROOM ID HELPERS
+        // ==========================================
+
+        /**
+         * Generate or retrieve a random anonymous sender ID stored in sessionStorage.
+         * Distinguishes "my" messages (right) from the "other person's" messages (left)
+         * without requiring any login or username.
+         */
+        function getOrCreateSenderId() {
+            const key = "anon_chat_sender_id";
+            try {
+                let id = sessionStorage.getItem(key);
+                if (!id) {
+                    id = "user_" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+                    sessionStorage.setItem(key, id);
+                }
+                return id;
+            } catch (err) {
+                // Fallback to in-memory ID if sessionStorage is restricted
+                return "user_" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+            }
+        }
+
+        /**
+         * Read room ID from URL hash (#room=abc123) or query param (?room=abc123).
+         * If none exists, generate a short random room ID and update the URL hash.
+         */
+        function getOrCreateRoomId() {
+            const hash = window.location.hash || "";
+            const hashMatch = hash.match(/room=([a-zA-Z0-9_-]+)/);
+            if (hashMatch && hashMatch[1]) {
+                return hashMatch[1];
+            }
+
+            const params = new URLSearchParams(window.location.search);
+            const queryRoom = params.get("room");
+            if (queryRoom && /^[a-zA-Z0-9_-]+$/.test(queryRoom)) {
+                return queryRoom;
+            }
+
+            // Generate a simple 6-character room ID
+            const newRoomId = Math.random().toString(36).substring(2, 8);
+            try {
+                window.location.hash = "room=" + newRoomId;
+            } catch (e) {
+                // Ignore if hash update is restricted
+            }
+            return newRoomId;
+        }
+
+        const mySenderId = getOrCreateSenderId();
+        let currentRoomId = getOrCreateRoomId();
+        roomBadge.textContent = "#" + currentRoomId;
+
+        // ==========================================
+        // 3. UI HELPERS
+        // ==========================================
+
+        /**
+         * Show a brief floating toast notification (no browser alert() used).
+         */
+        function showToast(message) {
+            toastEl.textContent = message;
+            toastEl.classList.remove("opacity-0");
+            toastEl.classList.add("opacity-100");
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toastEl.classList.remove("opacity-100");
+                toastEl.classList.add("opacity-0");
+            }, 2200);
+        }
+
+        /**
+         * Format remaining milliseconds as M:SS (e.g., 1:58).
+         */
+        function formatCountdown(msRemaining) {
+            const totalSeconds = Math.max(0, Math.ceil(msRemaining / 1000));
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+        }
+
+        /**
+         * Safely escape HTML to prevent XSS in message text.
+         */
+        function escapeHtml(text) {
+            const div = document.createElement("div");
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        /**
+         * Update header connection status indicator.
+         */
+        function setConnectionStatus(state, label) {
+            statusText.textContent = label;
+            statusDot.classList.remove("bg-amber-400", "bg-emerald-500", "bg-rose-500", "animate-pulse");
+            if (state === "online") {
+                statusDot.classList.add("bg-emerald-500");
+            } else if (state === "error") {
+                statusDot.classList.add("bg-rose-500");
+            } else {
+                statusDot.classList.add("bg-amber-400", "animate-pulse");
+            }
+        }
+
+        /**
+         * Copy the shareable chat room link using document.execCommand('copy')
+         * for reliable compatibility inside iframes and mobile browsers.
+         */
+        copyLinkBtn.addEventListener("click", () => {
+            const shareUrl = window.location.href.includes("room=")
+                ? window.location.href
+                : `${window.location.origin}${window.location.pathname}#room=${currentRoomId}`;
+
+            const tempInput = document.createElement("textarea");
+            tempInput.value = shareUrl;
+            tempInput.style.position = "fixed";
+            tempInput.style.opacity = "0";
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            tempInput.setSelectionRange(0, 99999);
+
+            try {
+                document.execCommand("copy");
+                showToast("Chat link copied! Share it to chat.");
+            } catch (err) {
+                showToast("Unable to copy link automatically.");
+            } finally {
+                document.body.removeChild(tempInput);
+            }
+        });
+
+        // ==========================================
+        // 4. FIRESTORE OPERATIONS
+        // ==========================================
+
+        /**
+         * Get reference to the public messages collection (strictly following Rule 1).
+         */
+        function getMessagesCollectionRef() {
+            return collection(db, "artifacts", appId, "public", "data", COLLECTION_NAME);
+        }
+
+        /**
+         * Delete a single message document from Firestore.
+         */
+        async function deleteMessageById(docId) {
+            if (!currentUser || !db || deletingIds.has(docId)) return;
+            deletingIds.add(docId);
+            try {
+                const msgRef = doc(db, "artifacts", appId, "public", "data", COLLECTION_NAME, docId);
+                await deleteDoc(msgRef);
+            } catch (err) {
+                console.error("Error deleting message:", err);
+                deletingIds.delete(docId);
+            }
+        }
+
+        /**
+         * Mark unseen messages from the OTHER person as seen when the tab is visible.
+         */
+        async function markOtherMessagesAsSeen() {
+            if (!currentUser || !db) return;
+            if (document.visibilityState !== "visible") return;
+
+            const now = Date.now();
+            const unseenFromOther = roomMessages.filter(
+                (msg) => msg.senderId !== mySenderId && !msg.seenAt && !markingSeenIds.has(msg.id)
+            );
+
+            for (const msg of unseenFromOther) {
+                markingSeenIds.add(msg.id);
+                try {
+                    const msgRef = doc(db, "artifacts", appId, "public", "data", COLLECTION_NAME, msg.id);
+                    await updateDoc(msgRef, { seenAt: now });
+                } catch (err) {
+                    console.error("Error marking message as seen:", err);
+                    markingSeenIds.delete(msg.id);
+                }
+            }
+        }
+
+        /**
+         * Erase ALL messages in the current room immediately for both users.
+         */
+        async function eraseAllRoomMessages() {
+            if (!currentUser || !db) return;
+            if (roomMessages.length === 0) {
+                showToast("Chat is already empty");
+                return;
+            }
+
+            eraseBtn.disabled = true;
+            const idsToDelete = roomMessages.map((m) => m.id);
+
+            try {
+                await Promise.all(idsToDelete.map((id) => deleteMessageById(id)));
+                showToast("All messages erased");
+            } catch (err) {
+                console.error("Error erasing chat:", err);
+                showToast("Failed to erase some messages");
+            } finally {
+                eraseBtn.disabled = false;
+            }
+        }
+
+        // ==========================================
+        // 5. RENDERING & AUTO-DELETE TIMER LOOP
+        // ==========================================
+
+        /**
+         * Render all active (non-expired) messages in the chat box.
+         */
+        function renderMessages() {
+            const now = Date.now();
+
+            // Filter out expired messages immediately from UI
+            const visibleMessages = roomMessages.filter((msg) => {
+                if (msg.seenAt && now - msg.seenAt >= AUTO_DELETE_MS) {
+                    deleteMessageById(msg.id);
+                    return false;
+                }
+                return true;
+            });
+
+            // Toggle empty state
+            if (visibleMessages.length === 0) {
+                messagesContainer.innerHTML = "";
+                messagesContainer.appendChild(emptyState);
+                emptyState.classList.remove("hidden");
+                return;
+            }
+
+            // Check if user is near bottom before re-rendering
+            const isNearBottom =
+                messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < 120;
+
+            emptyState.classList.add("hidden");
+
+            const fragment = document.createDocumentFragment();
+
+            visibleMessages.forEach((msg) => {
+                const isMine = msg.senderId === mySenderId;
+
+                const row = document.createElement("div");
+                row.className = `flex flex-col ${isMine ? "items-end" : "items-start"}`;
+                row.dataset.msgId = msg.id;
+
+                // Message Bubble
+                const bubble = document.createElement("div");
+                bubble.className = isMine
+                    ? "max-w-[82%] px-4 py-2.5 rounded-2xl rounded-br-sm bg-indigo-600 text-white text-sm leading-relaxed break-words shadow-sm"
+                    : "max-w-[82%] px-4 py-2.5 rounded-2xl rounded-bl-sm bg-slate-100 text-slate-800 text-sm leading-relaxed break-words";
+                bubble.innerHTML = escapeHtml(msg.text);
+
+                // Subtle Status / Countdown Meta
+                const meta = document.createElement("span");
+                meta.className = "text-[11px] text-slate-400 mt-1 px-1 select-none";
+                meta.dataset.countdownFor = msg.id;
+
+                if (msg.seenAt) {
+                    const remaining = AUTO_DELETE_MS - (now - msg.seenAt);
+                    meta.textContent = `Seen • Deletes in ${formatCountdown(remaining)}`;
+                    meta.classList.add("text-amber-600/90", "font-medium");
+                } else {
+                    meta.textContent = isMine ? "Sent • Waiting to be seen" : "New";
+                }
+
+                row.appendChild(bubble);
+                row.appendChild(meta);
+                fragment.appendChild(row);
+            });
+
+            messagesContainer.innerHTML = "";
+            messagesContainer.appendChild(fragment);
+
+            if (isNearBottom) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }
+
+        /**
+         * Periodic 1-second tick to update countdown labels smoothly and
+         * auto-delete any message whose 2-minute seen timer has expired.
+         */
+        setInterval(() => {
+            if (!currentUser || roomMessages.length === 0) return;
+
+            const now = Date.now();
+            let needsFullRerender = false;
+
+            for (const msg of roomMessages) {
+                if (msg.seenAt) {
+                    const elapsed = now - msg.seenAt;
+                    if (elapsed >= AUTO_DELETE_MS) {
+                        deleteMessageById(msg.id);
+                        needsFullRerender = true;
+                    } else {
+                        const metaEl = messagesContainer.querySelector(`[data-countdown-for="${msg.id}"]`);
+                        if (metaEl) {
+                            metaEl.textContent = `Seen • Deletes in ${formatCountdown(AUTO_DELETE_MS - elapsed)}`;
+                        }
+                    }
+                }
+            }
+
+            if (needsFullRerender) {
+                renderMessages();
+            }
+        }, 1000);
+
+        // ==========================================
+        // 6. EVENT LISTENERS
+        // ==========================================
+
+        // Send a new message
+        messageForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            if (!currentUser || !db) return;
+
+            const text = messageInput.value.trim();
+            if (!text) return;
+
+            messageInput.value = "";
+            messageInput.focus();
+
+            try {
+                await addDoc(getMessagesCollectionRef(), {
+                    roomId: currentRoomId,
+                    senderId: mySenderId,
+                    text: text,
+                    createdAt: Date.now(),
+                    seenAt: null
+                });
+                // Scroll smoothly to bottom after sending
+                setTimeout(() => {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }, 50);
+            } catch (err) {
+                console.error("Failed to send message:", err);
+                showToast("Could not send message. Try again.");
+            }
+        });
+
+        // Erase button click
+        eraseBtn.addEventListener("click", () => {
+            eraseAllRoomMessages();
+        });
+
+        // Mark unseen messages as seen when user returns to this browser tab
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+                markOtherMessagesAsSeen();
+            }
+        });
+
+        window.addEventListener("focus", () => {
+            markOtherMessagesAsSeen();
+        });
+
+        // Handle URL hash change if user manually switches rooms
+        window.addEventListener("hashchange", () => {
+            const updatedRoom = getOrCreateRoomId();
+            if (updatedRoom !== currentRoomId) {
+                currentRoomId = updatedRoom;
+                roomBadge.textContent = "#" + currentRoomId;
+                window.location.reload();
+            }
+        });
+
+        // ==========================================
+        // 7. INITIALIZE FIREBASE & AUTHENTICATION
+        // ==========================================
+
+        async function initApp() {
+            try {
+                if (typeof __firebase_config === "undefined") {
+                    setConnectionStatus("error", "Config missing");
+                    showToast("Firebase configuration not found.");
+                    return;
+                }
+
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // RULE 3: Authenticate FIRST and await before any Firestore queries
+                if (typeof __initial_auth_token !== "undefined" && __initial_auth_token) {
+                    const cred = await signInWithCustomToken(auth, __initial_auth_token);
+                    currentUser = cred.user;
+                } else {
+                    const cred = await signInAnonymously(auth);
+                    currentUser = cred.user;
+                }
+
+                // Enable interactive controls once authenticated
+                setConnectionStatus("online", "Connected");
+                sendBtn.disabled = false;
+                eraseBtn.disabled = false;
+
+                // RULE 2: Simple collection query, filter & sort in JavaScript memory
+                onSnapshot(
+                    getMessagesCollectionRef(),
+                    (snapshot) => {
+                        const allRoomMsgs = [];
+                        const now = Date.now();
+
+                        snapshot.forEach((docSnap) => {
+                            const data = docSnap.data();
+                            if (data.roomId === currentRoomId) {
+                                // Immediately delete already-expired messages
+                                if (data.seenAt && now - data.seenAt >= AUTO_DELETE_MS) {
+                                    deleteMessageById(docSnap.id);
+                                    return;
+                                }
+                                allRoomMsgs.push({
+                                    id: docSnap.id,
+                                    ...data
+                                });
+                            }
+                        });
+
+                        // Sort chronologically in memory
+                        allRoomMsgs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+                        roomMessages = allRoomMsgs;
+
+                        renderMessages();
+                        markOtherMessagesAsSeen();
+                    },
+                    (error) => {
+                        console.error("Firestore listener error:", error);
+                        setConnectionStatus("error", "Disconnected");
+                        showToast("Connection error. Please refresh.");
+                    }
+                );
+            } catch (err) {
+                console.error("Initialization error:", err);
+                setConnectionStatus("error", "Failed to connect");
+                showToast("Could not connect to chat service.");
+            }
+        }
+
+        // Start application
+        initApp();
+    </script>
+</body>
+</html>
